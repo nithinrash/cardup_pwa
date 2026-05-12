@@ -1,0 +1,20 @@
+{
+  "name": "CardUp Sorter Control",
+  "short_name": "CardUp",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#2196F3",
+  "icons": [
+    {
+      "src": "https://via.placeholder.com/192/2196F3/FFFFFF?text=CardUp",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://via.placeholder.com/512/2196F3/FFFFFF?text=CardUp",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

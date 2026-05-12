@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="manifest" href="manifest.json">
+    <title>CardUp Remote</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; text-align: center; background: #121212; color: white; padding: 20px; margin: 0; }
+        h1 { margin-top: 20px; }
+        #status { color: #aaa; margin-bottom: 30px; font-size: 1.1em; }
+        
+        .btn { 
+            display: block; width: 90%; max-width: 350px; padding: 25px; margin: 15px auto;
+            font-size: 20px; font-weight: bold; color: white;
+            border: none; border-radius: 12px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: transform 0.1s, opacity 0.3s;
+        }
+        .btn:active { transform: scale(0.96); }
+        
+        #installBtn { background-color: #ff9800; display: none; }
+        #connectBtn { background-color: #2196F3; }
+        .start { background-color: #4CAF50; }
+        .clear { background-color: #9C27B0; }
+        .stop { background-color: #F44336; }
+
+        /* Hide controls until connected */
+        #controls { display: none; margin-top: 40px; border-top: 1px solid #333; padding-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <h1>CardUp System</h1>
+    <div id="status">Status: Disconnected</div>
+
+    <button id="installBtn" class="btn">📲 Install App</button>
+    <button id="connectBtn" class="btn" onclick="connectBluetooth()">🔗 Connect to Machine</button>
+
+    <div id="controls">
+        <button class="btn start" onclick="sendCommand('<START>')">▶ START SORTING</button>
+        <button class="btn clear" onclick="sendCommand('<CLEAR>')">↺ CLEAR JAM</button>
+        <button class="btn stop" onclick="sendCommand('<STOP>')">🛑 EMERGENCY STOP</button>
+    </div>
+
+    <script>
+        // 1. PWA INSTALLATION
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBtn').style.display = 'block';
+        });
+
+        document.getElementById('installBtn').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    document.getElementById('installBtn').style.display = 'none';
+                }
+                deferredPrompt = null;
+            }
+        });
+
+        // 2. BLUETOOTH LOGIC
+        const SERVICE_UUID = '12345678-1234-5678-1234-567812345678'; 
+        const CHAR_UUID = '87654321-4321-6543-4321-876543210987';    
+
+        let bleCharacteristic;
+
+        async function connectBluetooth() {
+            const statusEl = document.getElementById('status');
+            try {
+                statusEl.innerText = "Scanning for CardUp...";
+                statusEl.style.color = "#ffeb3b"; 
+
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [{ name: 'CardUp' }], 
+                    optionalServices: [SERVICE_UUID]
+                });
+
+                device.addEventListener('gattserverdisconnected', onDisconnected);
+
+                statusEl.innerText = "Connecting to device...";
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService(SERVICE_UUID);
+                bleCharacteristic = await service.getCharacteristic(CHAR_UUID);
+
+                statusEl.innerText = "🟢 Connected & Ready";
+                statusEl.style.color = "#4CAF50"; 
+                
+                document.getElementById('connectBtn').style.display = 'none';
+                document.getElementById('controls').style.display = 'block';
+
+            } catch (error) {
+                statusEl.innerText = "Connection Failed. Try again.";
+                statusEl.style.color = "#F44336"; 
+                console.error(error);
+            }
+        }
+
+        function onDisconnected() {
+            document.getElementById('status').innerText = "🔴 Disconnected";
+            document.getElementById('status').style.color = "#F44336";
+            document.getElementById('connectBtn').style.display = 'block';
+            document.getElementById('controls').style.display = 'none';
+            bleCharacteristic = null;
+        }
+
+        async function sendCommand(cmd) {
+            if (!bleCharacteristic) return;
+            try {
+                let encoder = new TextEncoder();
+                await bleCharacteristic.writeValue(encoder.encode(cmd));
+                console.log("Sent: " + cmd);
+            } catch (error) {
+                console.error("Failed to send command", error);
+            }
+        }
+    </script>
+</body>
+</html>
