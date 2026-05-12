@@ -7,14 +7,16 @@
   "theme_color": "#2196F3",
   "icons": [
     {
-      "src": "https://via.placeholder.com/192/2196F3/FFFFFF?text=CardUp",
+      "src": "./icon.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "https://via.placeholder.com/512/2196F3/FFFFFF?text=CardUp",
+      "src": "./icon.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
